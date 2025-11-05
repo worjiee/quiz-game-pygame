@@ -1,0 +1,11 @@
+# Mathify - Math Quiz Game Requirements
+
+# Python 3.6 or higher is required
+
+# External packages:
+pygame>=2.5.0
+
+# Built-in modules used:
+# - random (for question generation)
+# - sys (for system operations)
+
