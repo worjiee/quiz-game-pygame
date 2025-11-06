@@ -2,6 +2,7 @@ import random
 import pygame
 import sys
 import math
+import os
 
 # Initialize Pygame
 pygame.init()
@@ -124,12 +125,13 @@ class MathifyGame:
     
     def __init__(self):
         """Initialize the game."""
+        self.is_fullscreen = False
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("Mathify")
-        
-        # Load custom logo if available
+        # Load custom logo if available (works in dev and when bundled)
         try:
-            logo = pygame.image.load("mathifylogo.png")
+            logo_path = self._resource_path("mathifylogo.png")
+            logo = pygame.image.load(logo_path).convert_alpha()
             pygame.display.set_icon(logo)
         except:
             pass
@@ -172,6 +174,28 @@ class MathifyGame:
         LARGE_FONT = pygame.font.Font(None, 56)
         MEDIUM_FONT = pygame.font.Font(None, 36)
         SMALL_FONT = pygame.font.Font(None, 28)
+
+    def toggle_fullscreen(self):
+        """Toggle fullscreen using SCALED so content scales with display."""
+        self.is_fullscreen = not self.is_fullscreen
+        base_size = (WINDOW_WIDTH, WINDOW_HEIGHT)
+        try:
+            if self.is_fullscreen:
+                # Use fixed base size with SCALED+FULLSCREEN (SCALED cannot use 0x0)
+                self.screen = pygame.display.set_mode(base_size, pygame.FULLSCREEN | pygame.SCALED)
+            else:
+                self.screen = pygame.display.set_mode(base_size, pygame.SCALED | pygame.RESIZABLE)
+        except pygame.error:
+            # Retry without SCALED if driver refuses to create renderer
+            try:
+                if self.is_fullscreen:
+                    self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                else:
+                    self.screen = pygame.display.set_mode(base_size)
+            except pygame.error:
+                # Final fallback: windowed, no special flags
+                self.is_fullscreen = False
+                self.screen = pygame.display.set_mode(base_size)
     
     def generate_question(self):
         """Generate a random math question based on difficulty."""
@@ -185,8 +209,8 @@ class MathifyGame:
             num2 = random.randint(1, 50)
         else:  # hard
             operations = ['+', '-', '*', '/']
-            num1 = random.randint(1, 100)
-            num2 = random.randint(1, 100)
+            num1 = random.randint(1, 1000)
+            num2 = random.randint(1, 1000)
         
         operation = random.choice(operations)
         
@@ -390,8 +414,8 @@ class MathifyGame:
         self.draw_text_with_shadow(progress_text, SMALL_FONT, TEXT_COLOR, 
                                    WINDOW_WIDTH // 2 - 150, 85)
         
-        # Score
-        score_text = f"Score: {self.score}/{self.current_question - 1}" if self.current_question > 1 else "Score: 0/0"
+        # Score (show raw points only)
+        score_text = f"Score: {self.score} pts"
         self.draw_text_with_shadow(score_text, SMALL_FONT, PRIMARY_COLOR, 
                                    WINDOW_WIDTH // 2 + 150, 85)
         
@@ -520,8 +544,8 @@ class MathifyGame:
         self.draw_card(feedback_card)
         
         if self.is_correct:
-            emoji = "✓"
-            feedback_text = "Correct!"
+            emoji = None
+            feedback_text = "Nice"
             color = SUCCESS_COLOR
             
             # Show time bonus if earned
@@ -530,21 +554,22 @@ class MathifyGame:
                 self.draw_text_with_shadow(bonus_text, SMALL_FONT, (255, 215, 0),
                                           WINDOW_WIDTH // 2, 180)
         else:
-            emoji = "✗"
+            emoji = None
             if self.time_remaining <= 0:
-                feedback_text = "Time's Up!"
+                feedback_text = "Oops"
             else:
-                feedback_text = "Incorrect"
+                feedback_text = "Oops"
             color = ERROR_COLOR
         
-        # Emoji with animation
+        # Big feedback word (replaces emoji)
         scale = 1.0 + math.sin(self.pulse * 3) * 0.1
-        emoji_font = pygame.font.Font(None, int(72 * scale))
-        self.draw_text_with_shadow(emoji, emoji_font, TEXT_COLOR, 
+        word_font = pygame.font.Font(None, int(72 * scale))
+        self.draw_text_with_shadow(feedback_text, word_font, TEXT_COLOR,
                                    WINDOW_WIDTH // 2, 220)
         
-        # Feedback
-        self.draw_text_with_shadow(feedback_text, LARGE_FONT, color, 
+        # Subtext line for additional clarity (Correct!/Incorrect detail)
+        subtext = "Correct!" if self.is_correct else ("Time's Up!" if self.time_remaining <= 0 else "Incorrect")
+        self.draw_text_with_shadow(subtext, LARGE_FONT, color,
                                    WINDOW_WIDTH // 2, 310)
         
         if not self.is_correct:
@@ -553,7 +578,7 @@ class MathifyGame:
                                        WINDOW_WIDTH // 2, 370)
         
         # Current score
-        score_text = f"Current Score: {self.score}/{self.current_question * 6}"
+        score_text = f"Current Score: {self.score} pts"
         self.draw_text_with_shadow(score_text, MEDIUM_FONT, PRIMARY_COLOR, 
                                    WINDOW_WIDTH // 2, 440)
         
@@ -569,8 +594,9 @@ class MathifyGame:
         """Draw the final results screen."""
         self.screen.fill(BG_COLOR)
         
-        # Calculate percentage
-        percentage = (self.score / self.total_questions) * 100
+        # Calculate percentage out of maximum possible points (6 per question)
+        max_points_total = self.total_questions * 6
+        percentage = (self.score / max_points_total) * 100 if max_points_total > 0 else 0
         
         # Determine message and emoji
         if percentage == 100:
@@ -608,8 +634,8 @@ class MathifyGame:
         self.draw_text_with_shadow(emoji, emoji_font, TEXT_COLOR, 
                                    WINDOW_WIDTH // 2, 180)
         
-        # Score
-        score_text = f"{self.score}/{self.total_questions}"
+        # Score (raw points only)
+        score_text = f"{self.score} pts"
         self.draw_text_with_shadow(score_text, LARGE_FONT, color, 
                                    WINDOW_WIDTH // 2, 260)
         
@@ -657,6 +683,9 @@ class MathifyGame:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            # Keep window flexible but maintain logical base size (SCALED handles scaling)
+            if event.type == pygame.VIDEORESIZE and not self.is_fullscreen:
+                self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SCALED | pygame.RESIZABLE)
             
             if self.state == "question" and event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN and self.user_input:
@@ -666,6 +695,15 @@ class MathifyGame:
                 elif event.unicode.isdigit() or (event.unicode == '-' and not self.user_input):
                     if len(self.user_input) < 10:
                         self.user_input += event.unicode
+            # Global keys
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_F11:
+                self.toggle_fullscreen()
+
+    def _resource_path(self, relative_path):
+        """Return absolute path for resource both in dev and PyInstaller bundle."""
+        if hasattr(sys, "_MEIPASS"):
+            return os.path.join(sys._MEIPASS, relative_path)
+        return os.path.join(os.path.abspath("."), relative_path)
     
     def run(self):
         """Main game loop."""
