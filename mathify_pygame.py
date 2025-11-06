@@ -128,7 +128,7 @@ class MathifyGame:
         self.is_fullscreen = False
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("Mathify")
-        # Load custom logo if available (works in dev and when bundled)
+        
         try:
             logo_path = self._resource_path("mathifylogo.png")
             logo = pygame.image.load(logo_path).convert_alpha()
@@ -292,7 +292,7 @@ class MathifyGame:
         self.pulse += 0.05
         for i in range(3):
             radius = 100 + i * 80 + int(math.sin(self.pulse + i) * 20)
-            alpha = 20 - i * 5
+            alpha = 20 - i * 5 
             surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
             pygame.draw.circle(surface, (*PRIMARY_COLOR, alpha), (radius, radius), radius)
             self.screen.blit(surface, (WINDOW_WIDTH // 2 - radius, 150 - radius))
@@ -602,23 +602,23 @@ class MathifyGame:
         # Determine message and emoji
         if percentage == 100:
             message = "Perfect! Outstanding work!"
-            emoji = "★"
+            emoji = ":)"
             color = (255, 215, 0)
         elif percentage >= 80:
             message = "Excellent! You're a math star!"
-            emoji = "★"
+            emoji = ""
             color = SUCCESS_COLOR
         elif percentage >= 60:
             message = "Good job! Keep practicing!"
-            emoji = "+"
+            emoji = ":D"
             color = PRIMARY_COLOR
         elif percentage >= 40:
             message = "Not bad! Room for improvement!"
-            emoji = "•"
+            emoji = ":/"
             color = (255, 152, 0)
         else:
             message = "Keep trying! Practice makes perfect!"
-            emoji = "↑"
+            emoji = ":("
             color = ERROR_COLOR
         
         # Results card
