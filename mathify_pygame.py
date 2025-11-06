@@ -176,26 +176,20 @@ class MathifyGame:
         SMALL_FONT = pygame.font.Font(None, 28)
 
     def toggle_fullscreen(self):
-        """Toggle fullscreen using SCALED so content scales with display."""
+        """Toggle fullscreen using safe flags to avoid renderer errors."""
         self.is_fullscreen = not self.is_fullscreen
         base_size = (WINDOW_WIDTH, WINDOW_HEIGHT)
         try:
             if self.is_fullscreen:
-                # Use fixed base size with SCALED+FULLSCREEN (SCALED cannot use 0x0)
-                self.screen = pygame.display.set_mode(base_size, pygame.FULLSCREEN | pygame.SCALED)
+                # Standard fullscreen (driver-selected size)
+                self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
             else:
-                self.screen = pygame.display.set_mode(base_size, pygame.SCALED | pygame.RESIZABLE)
+                # Windowed, resizable
+                self.screen = pygame.display.set_mode(base_size, pygame.RESIZABLE)
         except pygame.error:
-            # Retry without SCALED if driver refuses to create renderer
-            try:
-                if self.is_fullscreen:
-                    self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-                else:
-                    self.screen = pygame.display.set_mode(base_size)
-            except pygame.error:
-                # Final fallback: windowed, no special flags
-                self.is_fullscreen = False
-                self.screen = pygame.display.set_mode(base_size)
+            # Final fallback: simple windowed mode
+            self.is_fullscreen = False
+            self.screen = pygame.display.set_mode(base_size)
     
     def generate_question(self):
         """Generate a random math question based on difficulty."""
@@ -545,7 +539,7 @@ class MathifyGame:
         
         if self.is_correct:
             emoji = None
-            feedback_text = "Nice"
+            feedback_text = "GALING!"
             color = SUCCESS_COLOR
             
             # Show time bonus if earned
@@ -556,9 +550,9 @@ class MathifyGame:
         else:
             emoji = None
             if self.time_remaining <= 0:
-                feedback_text = "Oops"
+                feedback_text = "BOBO"
             else:
-                feedback_text = "Oops"
+                feedback_text = "HAHA TANGA"
             color = ERROR_COLOR
         
         # Big feedback word (replaces emoji)
@@ -683,9 +677,10 @@ class MathifyGame:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            # Keep window flexible but maintain logical base size (SCALED handles scaling)
+            # Resize window safely without SCALED to avoid renderer issues
             if event.type == pygame.VIDEORESIZE and not self.is_fullscreen:
-                self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SCALED | pygame.RESIZABLE)
+                new_size = (max(400, event.w), max(300, event.h))
+                self.screen = pygame.display.set_mode(new_size, pygame.RESIZABLE)
             
             if self.state == "question" and event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN and self.user_input:
