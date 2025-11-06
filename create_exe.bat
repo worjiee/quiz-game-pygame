@@ -1,4 +1,3 @@
-
 @echo off
 echo =========================================
 echo   Creating Executable for Mathify

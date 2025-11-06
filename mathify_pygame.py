@@ -25,6 +25,7 @@ WHITE = (255, 255, 255)
 DARK_GRAY = (100, 100, 100)
 LIGHT_GRAY = (200, 200, 200)
 SHADOW_COLOR = (0, 0, 0, 30)
+BLACK = (0, 0, 0)
 
 # Fonts
 TITLE_FONT = None
