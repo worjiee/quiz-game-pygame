@@ -150,6 +150,7 @@ class MathifyGame:
         self.correct_answer = 0
         self.is_correct = False
         self.feedback_timer = 0
+        self.has_answered = False
         
         # Timer
         self.time_limit = 15  # seconds per question
@@ -195,16 +196,16 @@ class MathifyGame:
         """Generate a random math question based on difficulty."""
         if self.difficulty == 'easy':
             operations = ['+', '-']
-            num1 = random.randint(1, 20)
-            num2 = random.randint(1, 20)
+            num1 = random.randint(1, 10)
+            num2 = random.randint(1, 10)
         elif self.difficulty == 'medium':
             operations = ['+', '-', '*']
-            num1 = random.randint(1, 50)
-            num2 = random.randint(1, 50)
+            num1 = random.randint(1, 20)
+            num2 = random.randint(1, 20)
         else:  # hard
             operations = ['+', '-', '*', '/']
-            num1 = random.randint(1, 1000)
-            num2 = random.randint(1, 1000)
+            num1 = random.randint(1, 50)
+            num2 = random.randint(1, 50)
         
         operation = random.choice(operations)
         
@@ -380,6 +381,8 @@ class MathifyGame:
         self.question_text, self.correct_answer = self.generate_question()
         self.question_start_time = pygame.time.get_ticks()
         self.time_remaining = self.time_limit
+        self.time_bonus = 0
+        self.has_answered = False
     
     def draw_question_screen(self):
         """Draw the question screen with enhanced visuals."""
@@ -492,9 +495,13 @@ class MathifyGame:
     
     def check_answer(self):
         """Check if the user's answer is correct."""
+        # Prevent double submissions (e.g., Enter + click in same frame)
+        if self.has_answered or self.state != "question":
+            return
         try:
             user_answer = int(self.user_input)
             self.is_correct = (user_answer == self.correct_answer)
+            self.has_answered = True
             
             # Calculate time bonus (up to 5 bonus points for fast answers)
             self.time_bonus = 0
@@ -539,7 +546,7 @@ class MathifyGame:
         
         if self.is_correct:
             emoji = None
-            feedback_text = "GALING!"
+            feedback_text = "Nice!"
             color = SUCCESS_COLOR
             
             # Show time bonus if earned
@@ -550,9 +557,9 @@ class MathifyGame:
         else:
             emoji = None
             if self.time_remaining <= 0:
-                feedback_text = "BOBO"
+                feedback_text = "Aww"
             else:
-                feedback_text = "HAHA TANGA"
+                feedback_text = "Nice try!"
             color = ERROR_COLOR
         
         # Big feedback word (replaces emoji)
