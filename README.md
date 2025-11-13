@@ -271,4 +271,3 @@ Feel free to fork this project and add your own improvements! Some ideas:
 ---
 
 **Enjoy the game and happy learning! 🎉**
-

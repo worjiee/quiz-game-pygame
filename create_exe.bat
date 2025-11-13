@@ -15,7 +15,7 @@ python -m pip install pyinstaller
 echo.
 echo Step 2: Creating executable...
 echo This may take a few minutes...
-pyinstaller --onefile --windowed --icon "mathifylogo.ico" --add-data "mathifylogo.png;." --name "Mathify" mathify_pygame.py
+pyinstaller --onefile --windowed --icon "mathifylogo.ico" --add-data "mathifylogo.png;." --add-data "music\\bg2.mp3;music" --add-data "music\\button1.mp3;music" --add-data "music\\correct.mp3;music" --add-data "music\\wrong.mp3;music" --name "Mathify" mathify_pygame.py
 
 if %errorlevel%==0 (
     echo.

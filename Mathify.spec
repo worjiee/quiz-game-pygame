@@ -5,7 +5,7 @@ a = Analysis(
     ['mathify_pygame.py'],
     pathex=[],
     binaries=[],
-    datas=[('mathifylogo.png', '.')],
+    datas=[('mathifylogo.png', '.'), ('music\\\\bg2.mp3', 'music'), ('music\\\\button1.mp3', 'music'), ('music\\\\correct.mp3', 'music'), ('music\\\\wrong.mp3', 'music')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

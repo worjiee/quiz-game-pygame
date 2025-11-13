@@ -6,6 +6,10 @@ import os
 
 # Initialize Pygame
 pygame.init()
+try:
+    pygame.mixer.init()
+except pygame.error:
+    print("Warning: audio mixer failed to initialize; music will be disabled.")
 
 # Constants
 WINDOW_WIDTH = 800
@@ -152,6 +156,10 @@ class MathifyGame:
         self.is_correct = False
         self.feedback_timer = 0
         self.has_answered = False
+        self.music_started = False
+        self.click_sound = None
+        self.correct_sound = None
+        self.wrong_sound = None
         
         # Timer
         self.time_limit = 15  # seconds per question
@@ -169,6 +177,9 @@ class MathifyGame:
         
         # Button click state
         self.mouse_clicked_last_frame = False
+
+        # Audio
+        self._initialize_audio()
         
         # Initialize fonts
         global TITLE_FONT, LARGE_FONT, MEDIUM_FONT, SMALL_FONT
@@ -192,6 +203,44 @@ class MathifyGame:
             # Final fallback: simple windowed mode
             self.is_fullscreen = False
             self.screen = pygame.display.set_mode(base_size)
+    
+    def _initialize_audio(self):
+        """Load music and sound effects if audio is available."""
+        if not pygame.mixer.get_init():
+            return
+        self._start_music()
+        self.click_sound = self._load_sound(os.path.join("music", "button1.mp3"), volume=0.6)
+        self.correct_sound = self._load_sound(os.path.join("music", "correct.mp3"), volume=0.7)
+        self.wrong_sound = self._load_sound(os.path.join("music", "wrong.mp3"), volume=0.7)
+    
+    def _start_music(self):
+        """Load and start looping background music."""
+        if self.music_started or not pygame.mixer.get_init():
+            return
+        music_path = self._resource_path(os.path.join("music", "bg2.mp3"))
+        try:
+            pygame.mixer.music.load(music_path)
+            pygame.mixer.music.set_volume(0.4)
+            pygame.mixer.music.play(-1)
+            self.music_started = True
+        except pygame.error:
+            print(f"Warning: could not load music at {music_path}")
+    
+    def _load_sound(self, relative_path, volume=1.0):
+        """Helper to load a single sound effect."""
+        path = self._resource_path(relative_path)
+        try:
+            sound = pygame.mixer.Sound(path)
+            sound.set_volume(volume)
+            return sound
+        except pygame.error:
+            print(f"Warning: could not load sound at {path}")
+            return None
+    
+    def _play_sound(self, sound):
+        """Play a sound effect if it exists."""
+        if sound:
+            sound.play()
     
     def generate_question(self):
         """Generate a random math question based on difficulty."""
@@ -355,6 +404,7 @@ class MathifyGame:
         hard_button.draw(self.screen)
         
         if easy_button.is_clicked(mouse_pos, mouse_clicked):
+            self._play_sound(self.click_sound)
             self.difficulty = 'easy'
             self.state = "question"
             self.current_question = 0
@@ -362,6 +412,7 @@ class MathifyGame:
             self.start_new_question()
         
         if medium_button.is_clicked(mouse_pos, mouse_clicked):
+            self._play_sound(self.click_sound)
             self.difficulty = 'medium'
             self.state = "question"
             self.current_question = 0
@@ -369,6 +420,7 @@ class MathifyGame:
             self.start_new_question()
         
         if hard_button.is_clicked(mouse_pos, mouse_clicked):
+            self._play_sound(self.click_sound)
             self.difficulty = 'hard'
             self.state = "question"
             self.current_question = 0
@@ -396,6 +448,8 @@ class MathifyGame:
         # Check if time ran out
         if self.time_remaining <= 0 and self.state == "question":
             self.is_correct = False
+            self.has_answered = True
+            self._play_sound(self.wrong_sound)
             self.state = "feedback"
             self.feedback_timer = pygame.time.get_ticks()
             return
@@ -492,6 +546,7 @@ class MathifyGame:
         submit_button.draw(self.screen)
         
         if submit_button.is_clicked(mouse_pos, mouse_clicked) and self.user_input:
+            self._play_sound(self.click_sound)
             self.check_answer()
     
     def check_answer(self):
@@ -524,6 +579,9 @@ class MathifyGame:
                         WINDOW_HEIGHT // 2,
                         random.choice([SUCCESS_COLOR, (255, 215, 0), PRIMARY_COLOR])
                     ))
+                self._play_sound(self.correct_sound)
+            else:
+                self._play_sound(self.wrong_sound)
             
             self.state = "feedback"
             self.feedback_timer = pygame.time.get_ticks()
@@ -670,6 +728,7 @@ class MathifyGame:
         exit_button.draw(self.screen)
         
         if play_again_button.is_clicked(mouse_pos, mouse_clicked):
+            self._play_sound(self.click_sound)
             self.state = "welcome"
             self.difficulty = None
             self.current_question = 0
@@ -678,6 +737,7 @@ class MathifyGame:
             self.target_progress_width = 0
         
         if exit_button.is_clicked(mouse_pos, mouse_clicked):
+            self._play_sound(self.click_sound)
             self.running = False
     
     def handle_events(self):
@@ -692,6 +752,7 @@ class MathifyGame:
             
             if self.state == "question" and event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN and self.user_input:
+                    self._play_sound(self.click_sound)
                     self.check_answer()
                 elif event.key == pygame.K_BACKSPACE:
                     self.user_input = self.user_input[:-1]
@@ -735,6 +796,8 @@ class MathifyGame:
             # Update mouse click state for next frame
             self.mouse_clicked_last_frame = mouse_pressed
         
+        if pygame.mixer.get_init():
+            pygame.mixer.music.stop()
         pygame.quit()
         sys.exit()
 
