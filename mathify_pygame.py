@@ -160,6 +160,8 @@ class MathifyGame:
         self.click_sound = None
         self.correct_sound = None
         self.wrong_sound = None
+        self.cheer_sound = None
+        self.aww_sound = None
         
         # Timer
         self.time_limit = 15  # seconds per question
@@ -212,6 +214,8 @@ class MathifyGame:
         self.click_sound = self._load_sound(os.path.join("music", "button1.mp3"), volume=0.6)
         self.correct_sound = self._load_sound(os.path.join("music", "correct.mp3"), volume=0.7)
         self.wrong_sound = self._load_sound(os.path.join("music", "wrong.mp3"), volume=0.7)
+        self.cheer_sound = self._load_sound(os.path.join("music", "cheer.mp3"), volume=0.7)
+        self.aww_sound = self._load_sound(os.path.join("music", "aww.mp3"), volume=0.7)
     
     def _start_music(self):
         """Load and start looping background music."""
@@ -658,6 +662,17 @@ class MathifyGame:
         max_points_total = self.total_questions * 6
         percentage = (self.score / max_points_total) * 100 if max_points_total > 0 else 0
         
+        # Play sound based on score (only once when entering results screen)
+        if not hasattr(self, 'results_sound_played'):
+            self.results_sound_played = False
+        
+        if not self.results_sound_played:
+            if percentage >= 80:
+                self._play_sound(self.cheer_sound)
+            elif percentage < 60:
+                self._play_sound(self.aww_sound)
+            self.results_sound_played = True
+        
         # Determine message and emoji
         if percentage == 100:
             message = "Perfect! Outstanding work!"
@@ -735,6 +750,7 @@ class MathifyGame:
             self.score = 0
             self.progress_width = 0
             self.target_progress_width = 0
+            self.results_sound_played = False  # Reset for next game
         
         if exit_button.is_clicked(mouse_pos, mouse_clicked):
             self._play_sound(self.click_sound)
